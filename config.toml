@@ -1,0 +1,5 @@
+# 仅在此文件里维护鉴权信息，其他参数通过命令行传入
+
+[auth]
+username = "xxx"
+token = "xxxx"

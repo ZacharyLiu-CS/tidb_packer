@@ -1,0 +1,6 @@
+*.tar.gz
+*.zip
+tikv-ctl
+tikv-server
+downloads/
+config.toml

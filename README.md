@@ -12,7 +12,33 @@ Both tools share a single `config.toml` file located at the root of the project.
 username = "your-username"
 token = "your-token"
 ```
+---
+## 全自动下载，拷贝升级组件，镜像发布，重新打包，并且上传仓库
+```
+make all
+```
 
+定制化流程
+1. 下载当前最新 tidb 镜像包
+```
+make download
+```
+2. 拷贝升级组件
+```
+bash cp_components.sh
+```
+3. 发布并打包镜像
+```
+bash pack_components.sh
+```
+4. 上传仓库
+```
+make upload
+```
+5. 清理缓存文件
+```
+bash clean_workspace.sh
+```
 ---
 
 ## Uploader

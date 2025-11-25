@@ -4,12 +4,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use clap::Parser;
+use indicatif::{ProgressBar, ProgressStyle};
 use md5::Context as Md5Context;
-use reqwest::{Body, Client, header::CONTENT_LENGTH};
+use reqwest::{header::CONTENT_LENGTH, Body, Client};
 use serde::Deserialize;
 use sha2::{Digest as ShaDigest, Sha256};
+
 use tokio_util::io::ReaderStream;
 
 #[derive(Parser, Debug)]
@@ -186,7 +188,15 @@ async fn upload_file(
     let file = tokio::fs::File::open(&plan.local_path)
         .await
         .with_context(|| format!("无法打开文件: {}", plan.local_path.display()))?;
-    let stream = ReaderStream::new(file);
+
+    let pb = ProgressBar::new(stats.size);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")?
+            .progress_chars("#>-"),
+    );
+
+    let stream = ReaderStream::new(pb.wrap_async_read(file));
     let body = Body::wrap_stream(stream);
 
     let client = Client::builder().build().context("无法构建 HTTP 客户端")?;
@@ -205,9 +215,11 @@ async fn upload_file(
     let text = response.text().await.context("读取上传响应失败")?;
 
     if !status.is_success() {
+        pb.abandon_with_message("上传失败");
         bail!("上传失败 (HTTP {}): {}", status.as_u16(), text);
     }
 
+    pb.finish_with_message("上传完成");
     println!("上传成功: {}", remote_url);
 
     if let Ok(parsed) = serde_json::from_str::<UploadResponse>(&text) {
